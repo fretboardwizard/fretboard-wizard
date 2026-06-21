@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+
+ <head><script src="/_sdk/telemetry_sdk.js"></script>
+  <body class="min-h-screen p-4 bg-[#816854]">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guitar Scale Trainer</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'DM Sans', sans-serif; }
+    .string-label { width: 2.5%; min-width: 2.5%; text-align: center; font-size: 13px; font-weight: 700; color: #ffffff; display: flex; align-items: center; justify-content: center; }
+    .fret-cell { height: 36px; position: relative; border-right: 2px solid #bebebe; }
+    .fret-cell.nut-cell { border-right: 5px solid #d4d4d4; background: transparent; }
+    .string-line { position: relative; top: 50%; left: 0; right: 0; height: 2px; background: #9c9c9c; pointer-events: none; }
+    .note-dot { width: 28px; height: 28px; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; z-index: 2; opacity: 0; pointer-events: none; transition: all .15s; }
+    .note-dot.active { opacity: 1; pointer-events: auto; }
+    .note-dot.root { background: #a1d99b; color: #1a1a2e; }
+    .note-dot.scale { background: #ffffff; color: #1a1a2e; }
+    .note-dot.manual { background: #ffffff; color: #000000; }
+    .fret-number { text-align: center; font-size: 11px; color: #ffffff; }
+    .fret-marker-dot { width: 10px; height: 10px; border-radius: 50%; background: #fffdd0; position: relative; left: 50%; transform: translateX(-50%); }
+    .mode-toggle { display: inline-flex; border-radius: 6px; overflow: hidden; border: 1px solid #555; }
+    .mode-toggle button { padding: 4px 14px; font-size: 13px; font-weight: 500; background: #c1c1c1; color: #000000; border: none; cursor: pointer; transition: all .15s; }
+    .mode-toggle button.active { background: #464646; color: #fff; }
+    .chromatic-btn { padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; background: #464646; color: #ffffff; border: 1px solid #555; cursor: pointer; transition: all .1s; }
+    .chromatic-btn.selected { background: #a2d99c; color: #000000; border-color: #2a9d8f; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" type="text/javascript"></script>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="/_sdk/resizing_sdk.js" type="text/javascript"></script>
+ </head>
+ <body data-template-id="__page-root" class="min-h-screen p-4">
+  <header class="w-full mb-4">
+   <h1 data-template-id="page-title" class="canva-text text-2xl font-bold mb-3"></h1>
+   <div class="flex flex-wrap gap-3 items-center mb-3">
+    <div class="mode-toggle" id="mode-toggle"><button id="mode-scale" class="active">Scale · Chord</button> <button id="mode-manual">Manual</button>
+    </div>
+   </div>
+   <div id="scale-controls" class="flex flex-wrap gap-3 items-center"><label class="flex items-center gap-1"> <span data-template-id="key-label" class="canva-text text-sm font-medium"></span> <select id="key-select" class="border rounded px-2 py-1 text-sm bg-white"></select> </label> <label class="flex items-center gap-1"> <span data-template-id="scale-label" class="canva-text text-sm font-medium"></span> <select id="scale-select" class="border rounded px-2 py-1 text-sm bg-white"></select> </label> <label class="flex items-center gap-1 cursor-pointer"> <input type="checkbox" id="root-toggle" checked class="w-4 h-4"> <span data-template-id="root-label"class="px-3 py-1 rounded-md bg-gray-800 text-white border border-gray-600 hover:bg-gray-700 text-sm font-medium">Highlight Root</span> </label> <button id="clear-btn" data-template-id="clear-button" class="canva-button px-3 py-1 rounded text-sm font-medium"></button>
+   </div>
+   <div id="manual-controls" class="hidden flex-wrap gap-2 items-center">
+    <div id="chromatic-buttons" class="flex flex-wrap gap-1"></div><button id="clear-manual-btn"style="margin-left: 40px;" data-template-id="clear-manual-button"  class="px-3 py-1 rounded-md bg-gray-800 text-white border border-gray-600 hover:bg-gray-700">Clear</button>
+   </div>
+  </header>
+  <main class="w-full" style="overflow-x:auto;">
+   <div id="fretboard"></div>
+  </main>
+  <script src="/_sdk/editing_sdk.js"></script>
+  <script>
+    const NOTES = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+    const TUNING = [4,11,7,2,9,4];
+    const STRING_NAMES = ['E','B','G','D','A','E'];
+    const FRETS = 22;
+    const SINGLE_MARKERS = [3,5,7,9,15,17,19,21];
+    const DOUBLE_MARKERS = [12];
+    const SCALES = {
+      'Ionian':[0,2,4,5,7,9,11],'Mixolydian':[0,2,4,5,7,9,10],'Altered':[0,1,3,4,6,8,10],
+      'Diminished':[0,2,3,5,6,8,9,11],'Harmonic Minor':[0,2,3,5,7,8,11],'Melodic Minor':[0,2,3,5,7,9,11],
+      'Minor Pentatonic':[0,3,5,7,10],'Major Pentatonic':[0,2,4,7,9],
+      '— Triads —':null,'Major Triad':[0,4,7],'Minor Triad':[0,3,7],'Diminished Triad':[0,3,6],
+      'Augmented Triad':[0,4,8],'Sus2 Triad':[0,2,7],'Sus4 Triad':[0,5,7],
+      '— Seventh Chords —':null,'Major 7':[0,4,7,11],'Dominant 7':[0,4,7,10],'Minor 7':[0,3,7,10],
+      'Min/Maj 7':[0,3,7,11],'Dim 7':[0,3,6,9],'Half-Dim 7':[0,3,6,10],'Aug 7':[0,4,8,10],'Aug Maj 7':[0,4,8,11]
+    };
+
+    const NUT_PCT = 2, LABEL_PCT = 2.5;
+    const FRET_AREA_PCT = 100 - NUT_PCT - LABEL_PCT;
+    const rawWidths = [];
+    for (let f = 1; f <= FRETS; f++) {
+      const d0 = 650 - (650 / Math.pow(2, (f-1)/12));
+      const d1 = 650 - (650 / Math.pow(2, f/12));
+      rawWidths.push(d1 - d0);
+    }
+    const totalRaw = rawWidths.reduce((a,b)=>a+b,0);
+    const fretPcts = rawWidths.map(w => (w/totalRaw)*FRET_AREA_PCT);
+
+    let mode = 'scale';
+    let manualNotes = new Set();
+    let showRoot = true;
+
+    const keySelect = document.getElementById('key-select');
+    const scaleSelect = document.getElementById('scale-select');
+    NOTES.forEach((n,i) => keySelect.add(new Option(n,i)));
+    Object.keys(SCALES).forEach(s => { const o = new Option(s,s); if(!SCALES[s]) o.disabled=true; scaleSelect.add(o); });
+    scaleSelect.value = 'Ionian';
+
+    // Build chromatic buttons
+    const chrBtns = document.getElementById('chromatic-buttons');
+    NOTES.forEach((n,i) => {
+      const btn = document.createElement('button');
+      btn.className = 'chromatic-btn';
+      btn.textContent = n;
+      btn.addEventListener('click', () => {
+        if (manualNotes.has(i)) { manualNotes.delete(i); btn.classList.remove('selected'); }
+        else { manualNotes.add(i); btn.classList.add('selected'); }
+        updateHighlights();
+      });
+      chrBtns.appendChild(btn);
+    });
+
+    // Mode toggle
+    document.getElementById('mode-scale').addEventListener('click', () => setMode('scale'));
+    document.getElementById('mode-manual').addEventListener('click', () => setMode('manual'));
+    function setMode(m) {
+      mode = m;
+      document.getElementById('mode-scale').classList.toggle('active', m==='scale');
+      document.getElementById('mode-manual').classList.toggle('active', m==='manual');
+      document.getElementById('scale-controls').style.display = m==='scale'?'flex':'none';
+      document.getElementById('manual-controls').style.display = m==='manual'?'flex':'none';
+      updateHighlights();
+    }
+
+    document.getElementById('root-toggle').addEventListener('change', (e) => { showRoot = e.target.checked; updateHighlights(); });
+
+    function buildFretboard() {
+      const fb = document.getElementById('fretboard');
+      fb.innerHTML = '';
+      const wrap = document.createElement('div');
+      wrap.style.position = 'relative';
+      wrap.style.zIndex = '0';
+      wrap.style.display = 'flex';
+      wrap.style.flexDirection = 'column';
+      wrap.style.width = '100%';
+
+      for (let s = 0; s < 6; s++) {
+        const row = document.createElement('div');
+        row.style.display = 'flex'; row.style.width = '100%'; row.style.height = '36px';
+        const label = document.createElement('div');
+        label.className = 'string-label'; label.style.width = LABEL_PCT+'%'; label.textContent = STRING_NAMES[s];
+        row.appendChild(label);
+        const nut = document.createElement('div');
+        nut.className = 'fret-cell nut-cell'; nut.style.width = NUT_PCT+'%'; nut.style.position = 'relative';
+        nut.innerHTML = '<div class="string-line"></div>';
+        row.appendChild(nut);
+        for (let f = 1; f <= FRETS; f++) {
+          const cell = document.createElement('div');
+          cell.className = 'fret-cell';
+          cell.style.width = fretPcts[f-1]+'%'; cell.style.position = 'relative'; cell.style.background = '#290101';
+          cell.innerHTML = '<div class="string-line"></div>';
+          // Fret markers between strings 3 and 4 (index 2 and 3)
+          if (s === 2) {
+            if (SINGLE_MARKERS.includes(f)) {
+              const m = document.createElement('div');
+              m.className = 'fret-marker-dot'; m.style.bottom = '-30px';
+              cell.appendChild(m);m.style.zIndex = '1';
+            }
+            if (DOUBLE_MARKERS.includes(f)) {
+              const m = document.createElement('div');
+              m.className = 'fret-marker-dot'; m.style.bottom = '7px';
+              cell.appendChild(m);m.style.zIndex = '1';
+            }
+          }
+          if (s === 3 && DOUBLE_MARKERS.includes(f)) {
+            const m = document.createElement('div');
+            m.className = 'fret-marker-dot'; m.style.top = '29px';
+            cell.appendChild(m);m.style.zIndex = '1';
+          }
+          const dot = document.createElement('div');
+          dot.className = 'note-dot';
+          const noteIdx = (TUNING[s] + f) % 12;
+          dot.textContent = NOTES[noteIdx];
+          dot.dataset.string = s; dot.dataset.fret = f; dot.dataset.note = noteIdx;
+          cell.appendChild(dot);
+          row.appendChild(cell);
+        }
+        wrap.appendChild(row);
+      }
+
+      // Fret numbers
+      const numRow = document.createElement('div');
+      numRow.style.display = 'flex'; numRow.style.width = '100%'; numRow.style.height = '20px';
+      numRow.innerHTML = `<div style="width:${LABEL_PCT}%"></div><div style="width:${NUT_PCT}%"></div>`;
+      for (let f = 1; f <= FRETS; f++) {
+        const c = document.createElement('div');
+        c.className = 'fret-number'; c.style.width = fretPcts[f-1]+'%'; c.textContent = f;
+        numRow.appendChild(c);
+      }
+      wrap.appendChild(numRow);
+      fb.appendChild(wrap);
+      updateHighlights();
+    }
+
+    function updateHighlights() {
+      const root = parseInt(keySelect.value);
+      const intervals = SCALES[scaleSelect.value];
+      const scaleNotes = intervals ? new Set(intervals.map(i=>(root+i)%12)) : new Set();
+      document.querySelectorAll('.note-dot').forEach(dot => {
+        const noteIdx = parseInt(dot.dataset.note);
+        dot.classList.remove('active','root','scale','manual');
+        if (mode === 'manual') {
+          if (manualNotes.has(noteIdx)) dot.classList.add('active','manual');
+        } else {
+          if (scaleNotes.has(noteIdx)) {
+            dot.classList.add('active');
+            if (showRoot && noteIdx === root) dot.classList.add('root');
+            else dot.classList.add('scale');
+          }
+        }
+      });
+    }
+
+    keySelect.addEventListener('change', updateHighlights);
+    scaleSelect.addEventListener('change', updateHighlights);
+    document.getElementById('clear-btn').addEventListener('click', () => updateHighlights());
+    document.getElementById('clear-manual-btn').addEventListener('click', () => {
+      manualNotes.clear();
+      chrBtns.querySelectorAll('.chromatic-btn').forEach(b => b.classList.remove('selected'));
+      updateHighlights();
+    });
+
+    buildFretboard();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0e470d7a021a657',t:'MTc4MTg5MjEwNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
