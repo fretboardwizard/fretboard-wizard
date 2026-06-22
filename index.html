@@ -15,9 +15,15 @@
     .string-line { position: relative; top: 50%; left: 0; right: 0; height: 2px; background: #9c9c9c; pointer-events: none; }
     .note-dot { width: 28px; height: 28px; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; z-index: 2; opacity: 0; pointer-events: none; transition: all .15s; }
     .note-dot.active { opacity: 1; pointer-events: auto; }
+    
+    /* Chord Degree Color Coding */
     .note-dot.root { background: #a1d99b; color: #1a1a2e; }
+    .note-dot.third { background: #9ecae1; color: #1a1a2e; }
+    .note-dot.fifth { background: #fdd0a2; color: #1a1a2e; }
+    .note-dot.seventh { background: #7c5cb7; color: #ffffff; }
     .note-dot.scale { background: #ffffff; color: #1a1a2e; }
     .note-dot.manual { background: #ffffff; color: #000000; }
+    
     .fret-number { text-align: center; font-size: 11px; color: #ffffff; }
     .fret-marker-dot { width: 10px; height: 10px; border-radius: 50%; background: #fffdd0; position: relative; left: 50%; transform: translateX(-50%); }
     .mode-toggle { display: inline-flex; border-radius: 6px; overflow: hidden; border: 1px solid #555; }
@@ -37,7 +43,16 @@
     <div class="mode-toggle" id="mode-toggle"><button id="mode-scale" class="active">Scale · Chord</button> <button id="mode-manual">Manual</button>
     </div>
    </div>
-   <div id="scale-controls" class="flex flex-wrap gap-3 items-center"><label class="flex items-center gap-1"> <span data-template-id="key-label" class="canva-text text-sm font-medium"></span> <select id="key-select" class="border rounded px-2 py-1 text-sm bg-white"></select> </label> <label class="flex items-center gap-1"> <span data-template-id="scale-label" class="canva-text text-sm font-medium"></span> <select id="scale-select" class="border rounded px-2 py-1 text-sm bg-white"></select> </label> <label class="flex items-center gap-1 cursor-pointer"> <input type="checkbox" id="root-toggle" checked class="w-4 h-4"> <span data-template-id="root-label" class="px-3 py-1 rounded-md bg-gray-800 text-white border border-gray-600 hover:bg-gray-700 text-sm font-medium">Highlight Root</span> </label> <label class="flex items-center gap-1 cursor-pointer"> <input type="checkbox" id="open-string-toggle" checked class="w-4 h-4"> <span class="px-3 py-1 rounded-md bg-gray-800 text-white border border-gray-600 hover:bg-gray-700 text-sm font-medium">Show Open Strings</span> </label> <button id="clear-btn" data-template-id="clear-button" class="canva-button px-3 py-1 rounded text-sm font-medium"></button>
+   <div id="scale-controls" class="flex flex-wrap gap-3 items-center"><label class="flex items-center gap-1"> <span data-template-id="key-label" class="canva-text text-sm font-medium"></span> <select id="key-select" class="border rounded px-2 py-1 text-sm bg-white"></select> </label> <label class="flex items-center gap-1"> <span data-template-id="scale-label" class="canva-text text-sm font-medium"></span> <select id="scale-select" class="border rounded px-2 py-1 text-sm bg-white"></select> </label> 
+    
+    <label class="flex items-center gap-1 cursor-pointer"> <input type="checkbox" id="root-toggle" class="w-4 h-4"> <span class="px-2 py-1 rounded-md bg-gray-800 text-white border border-gray-600 hover:bg-gray-700 text-xs font-medium">Root</span> </label> 
+    <label class="flex items-center gap-1 cursor-pointer"> <input type="checkbox" id="third-toggle" class="w-4 h-4"> <span class="px-2 py-1 rounded-md bg-gray-800 text-white border border-gray-600 hover:bg-gray-700 text-xs font-medium">3rd</span> </label> 
+    <label class="flex items-center gap-1 cursor-pointer"> <input type="checkbox" id="fifth-toggle" class="w-4 h-4"> <span class="px-2 py-1 rounded-md bg-gray-800 text-white border border-gray-600 hover:bg-gray-700 text-xs font-medium">5th</span> </label> 
+    <label class="flex items-center gap-1 cursor-pointer"> <input type="checkbox" id="seventh-toggle" class="w-4 h-4"> <span class="px-2 py-1 rounded-md bg-gray-800 text-white border border-gray-600 hover:bg-gray-700 text-xs font-medium">7th</span> </label> 
+    
+    <button type="button" id="clear-degrees-btn" class="px-2 py-1 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-600 hover:bg-zinc-700 hover:text-white text-xs font-medium">Clear</button>
+    
+    <label class="flex items-center gap-1 cursor-pointer"> <input type="checkbox" id="open-string-toggle" class="w-4 h-4"> <span class="px-3 py-1 rounded-md bg-gray-800 text-white border border-gray-600 hover:bg-gray-700 text-sm font-medium">Show Open Strings</span> </label> <button id="clear-btn" data-template-id="clear-button" class="canva-button px-3 py-1 rounded text-sm font-medium"></button>
    </div>
    <div id="manual-controls" class="hidden flex-wrap gap-2 items-center">
     <div id="chromatic-buttons" class="flex flex-wrap gap-1"></div><button id="clear-manual-btn" style="margin-left: 40px;" data-template-id="clear-manual-button" class="px-3 py-1 rounded-md bg-gray-800 text-white border border-gray-600 hover:bg-gray-700">Clear</button>
@@ -64,6 +79,32 @@
       'Min/Maj 7':[0,3,7,11],'Dim 7':[0,3,6,9],'Half-Dim 7':[0,3,6,10],'Aug 7':[0,4,8,10],'Aug Maj 7':[0,4,8,11]
     };
 
+    // Strict music theory mapping dictionary for structural intervals
+    const DEGREES = {
+      'Ionian': { r: 0, t: 4, f: 7, s: 11 },
+      'Mixolydian': { r: 0, t: 4, f: 7, s: 10 },
+      'Altered': { r: 0, t: 4, f: 6, s: 10 }, 
+      'Diminished': { r: 0, t: 3, f: 6, s: 9 }, 
+      'Harmonic Minor': { r: 0, t: 3, f: 7, s: 11 },
+      'Melodic Minor': { r: 0, t: 3, f: 7, s: 11 },
+      'Minor Pentatonic': { r: 0, t: 3, f: 7, s: 10 },
+      'Major Pentatonic': { r: 0, t: 4, f: 7, s: -1 }, 
+      'Major Triad': { r: 0, t: 4, f: 7, s: -1 },
+      'Minor Triad': { r: 0, t: 3, f: 7, s: -1 },
+      'Diminished Triad': { r: 0, t: 3, f: 6, s: -1 },
+      'Augmented Triad': { r: 0, t: 4, f: 8, s: -1 },
+      'Sus2 Triad': { r: 0, t: -1, f: 7, s: -1 },
+      'Sus4 Triad': { r: 0, t: -1, f: 7, s: -1 },
+      'Major 7': { r: 0, t: 4, f: 7, s: 11 },
+      'Dominant 7': { r: 0, t: 4, f: 7, s: 10 },
+      'Minor 7': { r: 0, t: 3, f: 7, s: 10 },
+      'Min/Maj 7': { r: 0, t: 3, f: 7, s: 11 },
+      'Dim 7': { r: 0, t: 3, f: 6, s: 9 },
+      'Half-Dim 7': { r: 0, t: 3, f: 6, s: 10 },
+      'Aug 7': { r: 0, t: 4, f: 8, s: 10 },
+      'Aug Maj 7': { r: 0, t: 4, f: 8, s: 11 }
+    };
+
     const NUT_PCT = 2, LABEL_PCT = 2.5;
     const FRET_AREA_PCT = 100 - NUT_PCT - LABEL_PCT;
     const rawWidths = [];
@@ -75,10 +116,14 @@
     const totalRaw = rawWidths.reduce((a,b)=>a+b,0);
     const fretPcts = rawWidths.map(w => (w/totalRaw)*FRET_AREA_PCT);
 
+    // Initial launch states set to false
     let mode = 'scale';
     let manualNotes = new Set();
-    let showRoot = true;
-    let showOpenStrings = true;
+    let showRoot = false;
+    let showThird = false;
+    let showFifth = false;
+    let showSeventh = false;
+    let showOpenStrings = false;
 
     const keySelect = document.getElementById('key-select');
     const scaleSelect = document.getElementById('scale-select');
@@ -122,8 +167,27 @@
       updateHighlights();
     }
 
+    // Toggle event listeners
     document.getElementById('root-toggle')?.addEventListener('change', (e) => { showRoot = e.target.checked; updateHighlights(); });
+    document.getElementById('third-toggle')?.addEventListener('change', (e) => { showThird = e.target.checked; updateHighlights(); });
+    document.getElementById('fifth-toggle')?.addEventListener('change', (e) => { showFifth = e.target.checked; updateHighlights(); });
+    document.getElementById('seventh-toggle')?.addEventListener('change', (e) => { showSeventh = e.target.checked; updateHighlights(); });
     document.getElementById('open-string-toggle')?.addEventListener('change', (e) => { showOpenStrings = e.target.checked; updateHighlights(); });
+
+    // Clear chord interval selectors
+    document.getElementById('clear-degrees-btn')?.addEventListener('click', () => {
+      showRoot = false;
+      showThird = false;
+      showFifth = false;
+      showSeventh = false;
+      
+      const rTog = document.getElementById('root-toggle'); if(rTog) rTog.checked = false;
+      const tTog = document.getElementById('third-toggle'); if(tTog) tTog.checked = false;
+      const fTog = document.getElementById('fifth-toggle'); if(fTog) fTog.checked = false;
+      const sTog = document.getElementById('seventh-toggle'); if(sTog) sTog.checked = false;
+      
+      updateHighlights();
+    });
 
     function buildFretboard() {
       const fb = document.getElementById('fretboard');
@@ -208,23 +272,38 @@
       const ss = document.getElementById('scale-select');
       if (!ks || !ss) return;
       const root = parseInt(ks.value);
-      const intervals = SCALES[ss.value];
+      const scaleName = ss.value;
+      const intervals = SCALES[scaleName];
       const scaleNotes = intervals ? new Set(intervals.map(i=>(root+i)%12)) : new Set();
+      const deg = DEGREES[scaleName] || { r: 0, t: -1, f: -1, s: -1 };
+      
       document.querySelectorAll('.note-dot').forEach(dot => {
         const noteIdx = parseInt(dot.dataset.note);
         const fret = parseInt(dot.dataset.fret);
-        dot.classList.remove('active','root','scale','manual');
+        dot.classList.remove('active','root','third','fifth','seventh','scale','manual');
+        
         if (mode === 'manual') {
           if (manualNotes.has(noteIdx)) dot.classList.add('active','manual');
         } else {
-          // If this is an open string note (fret 0) and user toggled it off, skip it
-          if (fret === 0 && !showOpenStrings) {
-            return;
-          }
+          if (fret === 0 && !showOpenStrings) return;
+          
           if (scaleNotes.has(noteIdx)) {
             dot.classList.add('active');
-            if (showRoot && noteIdx === root) dot.classList.add('root');
-            else dot.classList.add('scale');
+            
+            // Derive absolute semitone distance from chosen root
+            const semitoneInterval = (noteIdx - root + 12) % 12;
+            
+            if (semitoneInterval === deg.r && showRoot) {
+              dot.classList.add('root');
+            } else if (semitoneInterval === deg.t && showThird) {
+              dot.classList.add('third');
+            } else if (semitoneInterval === deg.f && showFifth) {
+              dot.classList.add('fifth');
+            } else if (semitoneInterval === deg.s && showSeventh) {
+              dot.classList.add('seventh');
+            } else {
+              dot.classList.add('scale');
+            }
           }
         }
       });
