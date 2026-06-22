@@ -82,10 +82,16 @@
 
     const keySelect = document.getElementById('key-select');
     const scaleSelect = document.getElementById('scale-select');
-    if (keySelect) NOTES.forEach((n,i) => keySelect.add(new Option(n,i)));
+    
+    if (keySelect) {
+      NOTES.forEach((n,i) => keySelect.add(new Option(n,i)));
+      keySelect.addEventListener('change', () => updateHighlights());
+    }
+    
     if (scaleSelect) {
       Object.keys(SCALES).forEach(s => { const o = new Option(s,s); if(!SCALES[s]) o.disabled=true; scaleSelect.add(o); });
       scaleSelect.value = 'Ionian';
+      scaleSelect.addEventListener('change', () => updateHighlights());
     }
 
     // Build chromatic buttons
