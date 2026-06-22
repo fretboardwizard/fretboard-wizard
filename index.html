@@ -79,7 +79,6 @@
       'Min/Maj 7':[0,3,7,11],'Dim 7':[0,3,6,9],'Half-Dim 7':[0,3,6,10],'Aug 7':[0,4,8,10],'Aug Maj 7':[0,4,8,11]
     };
 
-    // Strict music theory mapping dictionary for structural intervals
     const DEGREES = {
       'Ionian': { r: 0, t: 4, f: 7, s: 11 },
       'Mixolydian': { r: 0, t: 4, f: 7, s: 10 },
@@ -116,7 +115,6 @@
     const totalRaw = rawWidths.reduce((a,b)=>a+b,0);
     const fretPcts = rawWidths.map(w => (w/totalRaw)*FRET_AREA_PCT);
 
-    // Initial launch states set to false
     let mode = 'scale';
     let manualNotes = new Set();
     let showRoot = false;
@@ -280,6 +278,14 @@
       document.querySelectorAll('.note-dot').forEach(dot => {
         const noteIdx = parseInt(dot.dataset.note);
         const fret = parseInt(dot.dataset.fret);
+        
+        // Re-spell Ab to G# inside augmented/altered context environments
+        let noteText = NOTES[noteIdx];
+        if (mode === 'scale' && ['Altered', 'Augmented Triad', 'Aug 7', 'Aug Maj 7'].includes(scaleName)) {
+          if (noteText === 'Ab') noteText = 'G#';
+        }
+        dot.textContent = noteText;
+
         dot.classList.remove('active','root','third','fifth','seventh','scale','manual');
         
         if (mode === 'manual') {
