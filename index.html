@@ -8,7 +8,7 @@
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'DM Sans', sans-serif; }
+    body { font-family: 'DM Sans', sans-serif; background-color: #816854; }
     .string-label { width: 2.5%; min-width: 2.5%; text-align: center; font-size: 13px; font-weight: 700; color: #ffffff; display: flex; align-items: center; justify-content: center; }
     .fret-cell { height: 36px; position: relative; border-right: 2px solid #bebebe; }
     .fret-cell.nut-cell { border-right: 5px solid #d4d4d4; background: transparent; }
@@ -26,41 +26,116 @@
     
     .fret-number { text-align: center; font-size: 11px; color: #ffffff; }
     .fret-marker-dot { width: 10px; height: 10px; border-radius: 50%; background: #fffdd0; position: relative; left: 50%; transform: translateX(-50%); }
-    .mode-toggle { display: inline-flex; border-radius: 6px; overflow: hidden; border: 1px solid #555; }
+    .mode-toggle { display: inline-flex; border-radius: 6px; overflow: hidden; border: 1px solid #444; }
     .mode-toggle button { padding: 4px 14px; font-size: 13px; font-weight: 500; background: #c1c1c1; color: #000000; border: none; cursor: pointer; transition: all .15s; }
-    .mode-toggle button.active { background: #464646; color: #fff; }
+    .mode-toggle button.active { background: #333333; color: #fff; }
     .chromatic-btn { padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; background: #464646; color: #ffffff; border: 1px solid #555; cursor: pointer; transition: all .1s; }
     .chromatic-btn.selected { background: #a2d99c; color: #000000; border-color: #2a9d8f; }
+
+    /* Vertical range input adjustment */
+    .vertical-range {
+      writing-mode: vertical-lr;
+      direction: rtl;
+      appearance: slider-vertical;
+      -webkit-appearance: slider-vertical;
+      width: 10px;
+      height: 38px;
+      background: #52525b;
+      cursor: pointer;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" type="text/javascript"></script>
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
   <script src="/_sdk/resizing_sdk.js" type="text/javascript"></script>
  </head>
- <body data-template-id="__page-root" class="min-h-screen p-4 bg-[#816854]">
-  <header class="w-full mb-4">
-   <h1 data-template-id="page-title" class="canva-text text-2xl font-bold mb-3"></h1>
-   <div class="flex flex-wrap gap-3 items-center mb-3">
-    <div class="mode-toggle" id="mode-toggle"><button id="mode-scale" class="active">Scale · Chord</button> <button id="mode-manual">Manual</button>
-    </div>
+ <body data-template-id="__page-root" class="min-h-screen p-4">
+  
+  <header class="w-full mb-4 bg-zinc-700/95 border border-zinc-600 rounded-xl p-4 text-white shadow-xl flex flex-col lg:flex-row justify-between items-start gap-4">
+   
+   <div class="flex-1 w-full flex flex-col justify-start">
+     <div class="w-full mb-3 flex items-center justify-start">
+      <div class="mode-toggle" id="mode-toggle">
+        <button id="mode-scale" class="active">Scale · Chord</button> 
+        <button id="mode-manual">Manual</button>
+      </div>
+     </div>
+     
+     <div class="grid grid-cols-1 grid-rows-1 w-full items-center min-h-[44px]">
+       
+       <div id="scale-controls" class="col-start-1 row-start-1 flex flex-wrap gap-3 items-center transition-opacity duration-150 opacity-100 pointer-events-auto">
+        <label class="flex items-center gap-1"> 
+          <span class="text-sm font-semibold text-zinc-100">Key:</span> 
+          <select id="key-select" class="border rounded px-2 py-1 text-sm bg-zinc-800 text-white border-zinc-600 outline-none"></select> 
+        </label> 
+        <label class="flex items-center gap-1"> 
+          <span class="text-sm font-semibold text-zinc-100">Structure:</span> 
+          <select id="scale-select" class="border rounded px-2 py-1 text-sm bg-zinc-800 text-white border-zinc-600 outline-none"></select> 
+        </label> 
+        
+        <div class="flex flex-wrap gap-1.5 items-center bg-black/40 p-1.5 rounded-lg border border-zinc-600/50">
+          <label class="flex items-center gap-1.5 cursor-pointer bg-[#a1d99b] text-[#1a1a2e] px-2.5 py-1 rounded text-xs font-bold transition-opacity hover:opacity-90 select-none"> 
+            <input type="checkbox" id="root-toggle" class="w-3.5 h-3.5 accent-emerald-950"> 
+            <span>Root</span> 
+          </label> 
+          <label class="flex items-center gap-1.5 cursor-pointer bg-[#9ecae1] text-[#1a1a2e] px-2.5 py-1 rounded text-xs font-bold transition-opacity hover:opacity-90 select-none"> 
+            <input type="checkbox" id="third-toggle" class="w-3.5 h-3.5 accent-blue-950"> 
+            <span>3rd</span> 
+          </label> 
+          <label class="flex items-center gap-1.5 cursor-pointer bg-[#fdd0a2] text-[#1a1a2e] px-2.5 py-1 rounded text-xs font-bold transition-opacity hover:opacity-90 select-none"> 
+            <input type="checkbox" id="fifth-toggle" class="w-3.5 h-3.5 accent-amber-950"> 
+            <span>5th</span> 
+          </label> 
+          <label class="flex items-center gap-1.5 cursor-pointer bg-[#7c5cb7] text-white px-2.5 py-1 rounded text-xs font-bold transition-opacity hover:opacity-90 select-none"> 
+            <input type="checkbox" id="seventh-toggle" class="w-3.5 h-3.5 accent-purple-950"> 
+            <span>7th</span> 
+          </label> 
+          <button type="button" id="clear-degrees-btn" class="px-2.5 py-1 rounded bg-zinc-800 border border-zinc-600 text-zinc-200 hover:bg-zinc-900 text-xs font-bold transition-colors ml-1">Clear</button>
+        </div>
+        
+        <label class="flex items-center gap-1 cursor-pointer"> 
+          <input type="checkbox" id="open-string-toggle" class="w-4 h-4 accent-emerald-500"> 
+          <span class="px-3 py-1 rounded bg-zinc-800 text-white border border-zinc-600 hover:bg-zinc-900 text-xs font-semibold">Show Open Strings</span> 
+        </label>
+       </div>
+
+       <div id="manual-controls" class="col-start-1 row-start-1 flex flex-wrap gap-2 items-center transition-opacity duration-150 opacity-0 pointer-events-none">
+        <div id="chromatic-buttons" class="flex flex-wrap gap-1"></div>
+        <button id="clear-manual-btn" class="px-3 py-1 rounded bg-zinc-800 text-white border border-zinc-600 hover:bg-zinc-900 text-xs font-medium ml-4">Clear All</button>
+       </div>
+
+     </div>
    </div>
-   <div id="scale-controls" class="flex flex-wrap gap-3 items-center"><label class="flex items-center gap-1"> <span data-template-id="key-label" class="canva-text text-sm font-medium"></span> <select id="key-select" class="border rounded px-2 py-1 text-sm bg-white"></select> </label> <label class="flex items-center gap-1"> <span data-template-id="scale-label" class="canva-text text-sm font-medium"></span> <select id="scale-select" class="border rounded px-2 py-1 text-sm bg-white"></select> </label> 
-    
-    <label class="flex items-center gap-1 cursor-pointer"> <input type="checkbox" id="root-toggle" class="w-4 h-4"> <span class="px-2 py-1 rounded-md bg-gray-800 text-white border border-gray-600 hover:bg-gray-700 text-xs font-medium">Root</span> </label> 
-    <label class="flex items-center gap-1 cursor-pointer"> <input type="checkbox" id="third-toggle" class="w-4 h-4"> <span class="px-2 py-1 rounded-md bg-gray-800 text-white border border-gray-600 hover:bg-gray-700 text-xs font-medium">3rd</span> </label> 
-    <label class="flex items-center gap-1 cursor-pointer"> <input type="checkbox" id="fifth-toggle" class="w-4 h-4"> <span class="px-2 py-1 rounded-md bg-gray-800 text-white border border-gray-600 hover:bg-gray-700 text-xs font-medium">5th</span> </label> 
-    <label class="flex items-center gap-1 cursor-pointer"> <input type="checkbox" id="seventh-toggle" class="w-4 h-4"> <span class="px-2 py-1 rounded-md bg-gray-800 text-white border border-gray-600 hover:bg-gray-700 text-xs font-medium">7th</span> </label> 
-    
-    <button type="button" id="clear-degrees-btn" class="px-2 py-1 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-600 hover:bg-zinc-700 hover:text-white text-xs font-medium">Clear</button>
-    
-    <label class="flex items-center gap-1 cursor-pointer"> <input type="checkbox" id="open-string-toggle" class="w-4 h-4"> <span class="px-3 py-1 rounded-md bg-gray-800 text-white border border-gray-600 hover:bg-gray-700 text-sm font-medium">Show Open Strings</span> </label> <button id="clear-btn" data-template-id="clear-button" class="canva-button px-3 py-1 rounded text-sm font-medium"></button>
+
+   <div id="draggable-metronome" class="relative bg-black/50 border border-zinc-600 rounded-xl p-3 text-white flex gap-3 items-stretch max-w-xs w-full lg:w-72 select-none shrink-0 z-50 transition-shadow shadow-md">
+     <div class="flex-1 flex flex-col justify-between">
+       <div id="metronome-handle" class="flex items-center justify-between mb-1.5 cursor-move bg-zinc-800/60 hover:bg-zinc-800 p-1.5 rounded transition-colors">
+         <div class="flex items-center gap-2">
+           <div id="metro-flash" class="w-2.5 h-2.5 rounded-full bg-zinc-600 transition-colors duration-75"></div>
+           <span class="text-[10px] font-black tracking-wider uppercase text-zinc-400">Metronome ✥</span>
+         </div>
+         <div class="text-base font-black font-mono text-emerald-400">
+           <span id="bpm-display">120</span> <span class="text-[10px] font-normal text-zinc-400">BPM</span>
+         </div>
+       </div>
+       
+       <div class="flex items-center gap-2">
+         <input type="range" id="bpm-slider" min="40" max="220" value="120" class="flex-1 h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+         <button type="button" id="metro-toggle-btn" class="px-3 py-1 rounded bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-500 transition-colors shadow-md min-w-[54px]">Start</button>
+       </div>
+     </div>
+     
+     <div class="flex flex-col items-center justify-between bg-zinc-900/90 px-1.5 py-1 rounded border border-zinc-700 w-9">
+       <span class="text-[8px] font-black tracking-widest text-zinc-400">VOL</span>
+       <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1" orient="vertical" class="vertical-range accent-emerald-500">
+     </div>
    </div>
-   <div id="manual-controls" class="hidden flex-wrap gap-2 items-center">
-    <div id="chromatic-buttons" class="flex flex-wrap gap-1"></div><button id="clear-manual-btn" style="margin-left: 40px;" data-template-id="clear-manual-button" class="px-3 py-1 rounded-md bg-gray-800 text-white border border-gray-600 hover:bg-gray-700">Clear</button>
-   </div>
+
   </header>
+  
   <main class="w-full" style="overflow-x:auto;">
    <div id="fretboard"></div>
   </main>
+
   <script src="/_sdk/editing_sdk.js"></script>
   <script>
     const NOTES = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
@@ -123,6 +198,13 @@
     let showSeventh = false;
     let showOpenStrings = false;
 
+    // Metronome Engine Setup (Initialized explicitly at 100% volume / 1.0 scale value)
+    let audioCtx = null;
+    let isMetroPlaying = false;
+    let metroBpm = 120;
+    let metroVolume = 1.0;
+    let metroIntervalId = null;
+
     const keySelect = document.getElementById('key-select');
     const scaleSelect = document.getElementById('scale-select');
     
@@ -137,7 +219,6 @@
       scaleSelect.addEventListener('change', () => updateHighlights());
     }
 
-    // Build chromatic buttons
     const chrBtns = document.getElementById('chromatic-buttons');
     if (chrBtns) {
       NOTES.forEach((n,i) => {
@@ -153,37 +234,43 @@
       });
     }
 
-    // Mode toggle
     document.getElementById('mode-scale')?.addEventListener('click', () => setMode('scale'));
     document.getElementById('mode-manual')?.addEventListener('click', () => setMode('manual'));
+    
     function setMode(m) {
       mode = m;
       document.getElementById('mode-scale')?.classList.toggle('active', m==='scale');
       document.getElementById('mode-manual')?.classList.toggle('active', m==='manual');
-      const sc = document.getElementById('scale-controls'); if (sc) sc.style.display = m==='scale'?'flex':'none';
-      const mc = document.getElementById('manual-controls'); if (mc) mc.style.display = m==='manual'?'flex':'none';
+      
+      const sc = document.getElementById('scale-controls');
+      const mc = document.getElementById('manual-controls');
+      
+      if (m === 'scale') {
+        sc?.classList.remove('opacity-0', 'pointer-events-none');
+        sc?.classList.add('opacity-100', 'pointer-events-auto');
+        mc?.classList.remove('opacity-100', 'pointer-events-auto');
+        mc?.classList.add('opacity-0', 'pointer-events-none');
+      } else {
+        sc?.classList.remove('opacity-100', 'pointer-events-auto');
+        sc?.classList.add('opacity-0', 'pointer-events-none');
+        mc?.classList.remove('opacity-0', 'pointer-events-none');
+        mc?.classList.add('opacity-100', 'pointer-events-auto');
+      }
       updateHighlights();
     }
 
-    // Toggle event listeners
     document.getElementById('root-toggle')?.addEventListener('change', (e) => { showRoot = e.target.checked; updateHighlights(); });
     document.getElementById('third-toggle')?.addEventListener('change', (e) => { showThird = e.target.checked; updateHighlights(); });
     document.getElementById('fifth-toggle')?.addEventListener('change', (e) => { showFifth = e.target.checked; updateHighlights(); });
     document.getElementById('seventh-toggle')?.addEventListener('change', (e) => { showSeventh = e.target.checked; updateHighlights(); });
     document.getElementById('open-string-toggle')?.addEventListener('change', (e) => { showOpenStrings = e.target.checked; updateHighlights(); });
 
-    // Clear chord interval selectors
     document.getElementById('clear-degrees-btn')?.addEventListener('click', () => {
-      showRoot = false;
-      showThird = false;
-      showFifth = false;
-      showSeventh = false;
-      
+      showRoot = false; showThird = false; showFifth = false; showSeventh = false;
       const rTog = document.getElementById('root-toggle'); if(rTog) rTog.checked = false;
       const tTog = document.getElementById('third-toggle'); if(tTog) tTog.checked = false;
       const fTog = document.getElementById('fifth-toggle'); if(fTog) fTog.checked = false;
       const sTog = document.getElementById('seventh-toggle'); if(sTog) sTog.checked = false;
-      
       updateHighlights();
     });
 
@@ -192,11 +279,7 @@
       if (!fb) return;
       fb.innerHTML = '';
       const wrap = document.createElement('div');
-      wrap.style.position = 'relative';
-      wrap.style.zIndex = '0';
-      wrap.style.display = 'flex';
-      wrap.style.flexDirection = 'column';
-      wrap.style.width = '100%';
+      wrap.style.position = 'relative'; wrap.style.zIndex = '0'; wrap.style.display = 'flex'; wrap.style.flexDirection = 'column'; wrap.style.width = '100%';
 
       for (let s = 0; s < 6; s++) {
         const row = document.createElement('div');
@@ -205,7 +288,6 @@
         label.className = 'string-label'; label.style.width = LABEL_PCT+'%'; label.textContent = STRING_NAMES[s];
         row.appendChild(label);
         
-        // Nut setup with open string note dot rendering
         const nut = document.createElement('div');
         nut.className = 'fret-cell nut-cell'; nut.style.width = NUT_PCT+'%'; nut.style.position = 'relative';
         nut.innerHTML = '<div class="string-line"></div>';
@@ -222,23 +304,19 @@
           cell.className = 'fret-cell';
           cell.style.width = fretPcts[f-1]+'%'; cell.style.position = 'relative'; cell.style.background = '#290101';
           cell.innerHTML = '<div class="string-line"></div>';
-          // Fret markers between strings 3 and 4 (index 2 and 3)
           if (s === 2) {
             if (SINGLE_MARKERS.includes(f)) {
               const m = document.createElement('div');
-              m.className = 'fret-marker-dot'; m.style.bottom = '-30px';
-              cell.appendChild(m);m.style.zIndex = '1';
+              m.className = 'fret-marker-dot'; m.style.bottom = '-30px'; cell.appendChild(m); m.style.zIndex = '1';
             }
             if (DOUBLE_MARKERS.includes(f)) {
               const m = document.createElement('div');
-              m.className = 'fret-marker-dot'; m.style.bottom = '7px';
-              cell.appendChild(m);m.style.zIndex = '1';
+              m.className = 'fret-marker-dot'; m.style.bottom = '7px'; cell.appendChild(m); m.style.zIndex = '1';
             }
           }
           if (s === 3 && DOUBLE_MARKERS.includes(f)) {
             const m = document.createElement('div');
-            m.className = 'fret-marker-dot'; m.style.top = '29px';
-            cell.appendChild(m);m.style.zIndex = '1';
+            m.className = 'fret-marker-dot'; m.style.top = '29px'; cell.appendChild(m); m.style.zIndex = '1';
           }
           const dot = document.createElement('div');
           dot.className = 'note-dot';
@@ -251,7 +329,6 @@
         wrap.appendChild(row);
       }
 
-      // Fret numbers
       const numRow = document.createElement('div');
       numRow.style.display = 'flex'; numRow.style.width = '100%'; numRow.style.height = '20px';
       numRow.innerHTML = `<div style="width:${LABEL_PCT}%"></div><div style="width:${NUT_PCT}%"></div>`;
@@ -279,7 +356,6 @@
         const noteIdx = parseInt(dot.dataset.note);
         const fret = parseInt(dot.dataset.fret);
         
-        // Re-spell Ab to G# inside augmented/altered context environments
         let noteText = NOTES[noteIdx];
         if (mode === 'scale' && ['Altered', 'Augmented Triad', 'Aug 7', 'Aug Maj 7'].includes(scaleName)) {
           if (noteText === 'Ab') noteText = 'G#';
@@ -292,13 +368,9 @@
           if (manualNotes.has(noteIdx)) dot.classList.add('active','manual');
         } else {
           if (fret === 0 && !showOpenStrings) return;
-          
           if (scaleNotes.has(noteIdx)) {
             dot.classList.add('active');
-            
-            // Derive absolute semitone distance from chosen root
             const semitoneInterval = (noteIdx - root + 12) % 12;
-            
             if (semitoneInterval === deg.r && showRoot) {
               dot.classList.add('root');
             } else if (semitoneInterval === deg.t && showThird) {
@@ -315,7 +387,118 @@
       });
     }
 
-    document.getElementById('clear-btn')?.addEventListener('click', () => updateHighlights());
+    function playMetroClick() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      osc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+      gainNode.gain.setValueAtTime(metroVolume, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + 0.05);
+
+      const flash = document.getElementById('metro-flash');
+      if (flash) {
+        flash.classList.remove('bg-zinc-600');
+        flash.classList.add('bg-emerald-400', 'shadow-[0_0_10px_#34d399]');
+        setTimeout(() => {
+          flash.classList.remove('bg-emerald-400', 'shadow-[0_0_10px_#34d399]');
+          flash.classList.add('bg-zinc-600');
+        }, 60);
+      }
+    }
+
+    function startMetronomeLoop() {
+      if (metroIntervalId) clearInterval(metroIntervalId);
+      const msInterval = (60 / metroBpm) * 1000;
+      metroIntervalId = setInterval(playMetroClick, msInterval);
+    }
+
+    const bpmSlider = document.getElementById('bpm-slider');
+    const bpmDisplay = document.getElementById('bpm-display');
+    const volumeSlider = document.getElementById('volume-slider');
+    const metroToggleBtn = document.getElementById('metro-toggle-btn');
+
+    bpmSlider?.addEventListener('input', (e) => {
+      metroBpm = parseInt(e.target.value);
+      if (bpmDisplay) bpmDisplay.textContent = metroBpm;
+      if (isMetroPlaying) startMetronomeLoop();
+    });
+
+    volumeSlider?.addEventListener('input', (e) => {
+      metroVolume = parseFloat(e.target.value);
+    });
+
+    metroToggleBtn?.addEventListener('click', () => {
+      if (isMetroPlaying) {
+        clearInterval(metroIntervalId);
+        isMetroPlaying = false;
+        metroToggleBtn.textContent = 'Start';
+        metroToggleBtn.classList.remove('bg-rose-600', 'hover:bg-rose-500');
+        metroToggleBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+      } else {
+        isMetroPlaying = true;
+        metroToggleBtn.textContent = 'Stop';
+        metroToggleBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+        metroToggleBtn.classList.add('bg-rose-600', 'hover:bg-rose-500');
+        playMetroClick();
+        startMetronomeLoop();
+      }
+    });
+
+    const dragTarget = document.getElementById('draggable-metronome');
+    const dragHandle = document.getElementById('metronome-handle');
+    let isDragging = false;
+    let currentX = 0, currentY = 0, initialX = 0, initialY = 0;
+
+    dragHandle?.addEventListener('mousedown', dragStart);
+    dragHandle?.addEventListener('touchstart', dragStart, { passive: false });
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('touchmove', drag, { passive: false });
+    document.addEventListener('mouseup', dragEnd);
+    document.addEventListener('touchend', dragEnd);
+
+    function dragStart(e) {
+      if (e.type === 'touchstart') {
+        initialX = e.touches[0].clientX - currentX;
+        initialY = e.touches[0].clientY - currentY;
+      } else {
+        initialX = e.clientX - currentX;
+        initialY = e.clientY - currentY;
+      }
+      isDragging = true;
+    }
+
+    function drag(e) {
+      if (!isDragging) return;
+      if (e.type === 'touchmove') e.preventDefault();
+      
+      let clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+      let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+      
+      currentX = clientX - initialX;
+      currentY = clientY - initialY;
+
+      if (dragTarget) {
+        dragTarget.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+      }
+    }
+
+    function dragEnd() {
+      isDragging = false;
+    }
+
     document.getElementById('clear-manual-btn')?.addEventListener('click', () => {
       manualNotes.clear();
       if (chrBtns) chrBtns.querySelectorAll('.chromatic-btn').forEach(b => b.classList.remove('selected'));
@@ -324,5 +507,5 @@
 
     buildFretboard();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0e470d7a021a657',t:'MTc4MTg5MjEwNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ </body>
 </html>
